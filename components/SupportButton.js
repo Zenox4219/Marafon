@@ -2,7 +2,7 @@
 export default function SupportButton() {
   return (
     
-      href="https://t.me/marathon_zamir_bot"
+      <a href="https://t.me/marathon_zamir_bot"
       target="_blank"
       rel="noopener noreferrer"
       style={{
