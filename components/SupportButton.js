@@ -1,5 +1,4 @@
 "use client";
-
 export default function SupportButton() {
   return (
     
@@ -25,7 +24,7 @@ export default function SupportButton() {
         boxShadow: "0 4px 20px rgba(34,158,217,.4)",
       }}
     >
-      💬 Поддержка
+      Поддержка
     </a>
   );
 }
