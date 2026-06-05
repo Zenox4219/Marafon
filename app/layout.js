@@ -1,6 +1,7 @@
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import Navbar from "@/components/Navbar";
+import CountdownTimer from "@/components/CountdownTimer";
 
 export const metadata = {
   title: "MarathonTrack — Беги. Расти. Побеждай.",
@@ -22,6 +23,7 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <Navbar />
           <main>{children}</main>
+          <CountdownTimer />
         </AuthProvider>
       </body>
     </html>
