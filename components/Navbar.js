@@ -15,7 +15,7 @@ export default function Navbar() {
         <Link href="/" className="nav-logo">MarathonTrack</Link>
         <div className="nav-links">
           <Link href="/marathons" className="nav-link">Марафоны</Link>
-          <Link href="/leaderboard" className="nav-link">Лидеры</Link>
+          <Link href="/leaderboard" className="nav-link">Участники</Link>
           <Link href="/bmi" className="nav-link">BMI</Link>
           {user ? (
             <>
