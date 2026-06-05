@@ -5,15 +5,23 @@ import { useAuth } from "@/components/AuthProvider";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-const BMI_CATEGORIES = [
-  { label: "Недостаточный", max: 18.5, color: "#4fc3f7" },
-  { label: "Здоровый",      max: 25,   color: "#e8f400" },
-  { label: "Избыточный",    max: 30,   color: "#ffa726" },
-  { label: "Ожирение",      max: Infinity, color: "#ff4d00" },
-];
+const BMI_CATEGORIES = {
+  male: [
+    { label: "Недостаточный", max: 18.5, color: "#4fc3f7" },
+    { label: "Здоровый",      max: 25,   color: "#e8f400" },
+    { label: "Избыточный",    max: 30,   color: "#ffa726" },
+    { label: "Ожирение",      max: Infinity, color: "#ff4d00" },
+  ],
+  female: [
+    { label: "Недостаточный", max: 17.5, color: "#4fc3f7" },
+    { label: "Здоровый",      max: 24,   color: "#e8f400" },
+    { label: "Избыточный",    max: 29,   color: "#ffa726" },
+    { label: "Ожирение",      max: Infinity, color: "#ff4d00" },
+  ],
+};
 
-function getCategory(bmi) {
-  return BMI_CATEGORIES.find((c) => bmi < c.max);
+function getCategory(bmi, gender) {
+  return BMI_CATEGORIES[gender].find((c) => bmi < c.max);
 }
 
 function MaleIcon({ size = 80, color = "#666" }) {
@@ -42,9 +50,10 @@ function FemaleIcon({ size = 80, color = "#666" }) {
   );
 }
 
-function BMIScale({ bmi }) {
+function BMIScale({ bmi, gender }) {
   if (!bmi) return null;
   const pct = Math.min(Math.max(((bmi - 10) / 30) * 100, 0), 100);
+  const cats = BMI_CATEGORIES[gender];
   return (
     <div style={{ width: "100%", marginTop: 24 }}>
       <div style={{
@@ -60,10 +69,12 @@ function BMIScale({ bmi }) {
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8,
         fontSize: 11, color: "var(--muted)" }}>
-        <span>Недостаточный</span>
-        <span>Здоровый</span>
-        <span>Избыточный</span>
-        <span>Ожирение</span>
+        {cats.map((c) => <span key={c.label}>{c.label}</span>)}
+      </div>
+      <div style={{ marginTop: 12, fontSize: 12, color: "var(--muted)", textAlign: "center" }}>
+        {gender === "male"
+          ? "Норма для мужчин: 18.5 – 25"
+          : "Норма для женщин: 17.5 – 24"}
       </div>
     </div>
   );
@@ -81,7 +92,7 @@ export default function BMIPage() {
   const [error, setError]   = useState("");
   const [saved, setSaved]   = useState(false);
 
-  const category = bmi ? getCategory(bmi) : null;
+  const category = bmi ? getCategory(bmi, gender) : null;
 
   function calculate() {
     const h = parseFloat(height);
@@ -151,7 +162,7 @@ export default function BMIPage() {
             <p style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.8, marginBottom: 0 }}>
               <strong style={{ color: "var(--text)" }}>Индекс массы тела (BMI)</strong> — показатель соответствия веса и роста.
               Формула: <strong style={{ color: "var(--accent)" }}>вес (кг) / рост² (м)</strong>.
-              Для марафонца оптимальный BMI — 18.5–24.9: минимальная нагрузка на суставы и максимальная выносливость.
+              Нормы отличаются для мужчин и женщин — выбери свой пол для точного результата.
             </p>
           </div>
 
@@ -162,7 +173,7 @@ export default function BMIPage() {
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>Пол</div>
                 <div style={{ display: "flex", gap: 12 }}>
                   {[["male", "Мужской"], ["female", "Женский"]].map(([val, label]) => (
-                    <button key={val} onClick={() => setGender(val)} style={{
+                    <button key={val} onClick={() => { setGender(val); setBmi(null); setSaved(false); }} style={{
                       flex: 1, padding: "12px 0",
                       border: `1px solid ${gender === val ? "var(--accent)" : "var(--border)"}`,
                       background: gender === val ? "rgba(232,244,0,0.08)" : "var(--surface2)",
@@ -178,6 +189,13 @@ export default function BMIPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              <div style={{ marginBottom: 16, padding: "10px 14px", background: "var(--surface2)",
+                border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: 12, color: "var(--muted)" }}>
+                {gender === "male"
+                  ? "🏃 Норма для мужчин: до 18.5 — недостаток, 18.5–25 — норма, 25–30 — избыток, 30+ — ожирение"
+                  : "🏃‍♀️ Норма для женщин: до 17.5 — недостаток, 17.5–24 — норма, 24–29 — избыток, 29+ — ожирение"}
               </div>
 
               <div className="form-group">
@@ -215,7 +233,7 @@ export default function BMIPage() {
                   <div style={{ fontSize: 18, fontWeight: 600, color: category.color, marginBottom: 16 }}>
                     {category.label}
                   </div>
-                  <BMIScale bmi={bmi} />
+                  <BMIScale bmi={bmi} gender={gender} />
                   {user && (
                     <div style={{ marginTop: 20, fontSize: 13, color: "var(--muted)",
                       borderTop: "1px solid var(--border)", paddingTop: 16, width: "100%", textAlign: "center" }}>
