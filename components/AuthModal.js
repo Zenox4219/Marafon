@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -9,12 +10,13 @@ import {
 import { auth, googleProvider } from "@/lib/firebase";
 
 export default function AuthModal({ onClose }) {
-  const [mode, setMode] = useState("login"); // login | register
+  const [mode, setMode] = useState("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const clearError = () => setError("");
 
@@ -26,10 +28,12 @@ export default function AuthModal({ onClose }) {
       if (mode === "register") {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(cred.user, { displayName: name });
+        onClose();
+        router.push("/bmi");
       } else {
         await signInWithEmailAndPassword(auth, email, password);
+        onClose();
       }
-      onClose();
     } catch (err) {
       const msgs = {
         "auth/email-already-in-use": "Этот email уже зарегистрирован.",
