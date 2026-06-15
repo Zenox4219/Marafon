@@ -1,13 +1,23 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   updateProfile,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
+
+// Определяем: запущены ли мы внутри Android WebView
+function isWebView() {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  // Android WebView содержит "wv" или "WebView"
+  return /wv|WebView/.test(ua) || (ua.includes("Android") && !ua.includes("Chrome/") && !ua.includes("Firefox/"));
+}
 
 export default function AuthModal({ onClose }) {
   const [mode, setMode] = useState("login");
@@ -17,6 +27,21 @@ export default function AuthModal({ onClose }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  // При загрузке страницы — проверяем результат redirect (если вернулись после Google auth)
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          onClose();
+        }
+      })
+      .catch((err) => {
+        if (err.code !== "auth/no-auth-event") {
+          console.error("Redirect result error:", err.code);
+        }
+      });
+  }, []);
 
   const clearError = () => setError("");
 
@@ -53,14 +78,20 @@ export default function AuthModal({ onClose }) {
     setLoading(true);
     setError("");
     try {
-      // Configure provider to always show account picker
       googleProvider.setCustomParameters({ prompt: "select_account" });
-      const result = await signInWithPopup(auth, googleProvider);
-      if (result.user) {
-        onClose();
+
+      if (isWebView()) {
+        // В WebView используем redirect — popup не работает
+        await signInWithRedirect(auth, googleProvider);
+        // Страница уйдёт на Google, результат поймаем через getRedirectResult в useEffect
+      } else {
+        // В браузере — обычный popup
+        const result = await signInWithPopup(auth, googleProvider);
+        if (result.user) {
+          onClose();
+        }
       }
     } catch (err) {
-      // Ignore if user just closed the popup
       if (
         err.code !== "auth/popup-closed-by-user" &&
         err.code !== "auth/cancelled-popup-request"
