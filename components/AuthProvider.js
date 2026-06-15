@@ -12,8 +12,14 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        await createOrUpdateUser(firebaseUser);
+        // IMPORTANT: setUser immediately so auth works even if Firestore fails
         setUser(firebaseUser);
+        // Then try to sync to Firestore in background — errors won't break auth
+        try {
+          await createOrUpdateUser(firebaseUser);
+        } catch (err) {
+          console.error("Firestore sync failed (auth still works):", err);
+        }
       } else {
         setUser(null);
       }
