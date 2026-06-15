@@ -5,17 +5,21 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
-  onAuthStateChanged,
   updateProfile,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 
+// Определяем WebView по user agent
 function isWebView() {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent || "";
-  return /wv|WebView/.test(ua) || (ua.includes("Android") && !ua.includes("Chrome/") && !ua.includes("Firefox/"));
+  return (
+    ua.includes("wv") ||
+    ua.includes("WebView") ||
+    (ua.includes("Android") &&
+      !ua.includes("Chrome/") &&
+      ua.includes("Mobile Safari"))
+  );
 }
 
 export default function AuthModal({ onClose }) {
@@ -25,37 +29,7 @@ export default function AuthModal({ onClose }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  // Показываем "Выполняется вход..." пока Firebase восстанавливает сессию после redirect
-  const [redirectPending, setRedirectPending] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    // Проверяем есть ли pending redirect результат
-    setRedirectPending(true);
-
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) {
-          // Успешный вход — ждём onAuthStateChanged чтобы убедиться что сессия установлена
-          const unsub = onAuthStateChanged(auth, (user) => {
-            if (user) {
-              unsub();
-              setRedirectPending(false);
-              onClose();
-            }
-          });
-        } else {
-          setRedirectPending(false);
-        }
-      })
-      .catch((err) => {
-        setRedirectPending(false);
-        if (err.code !== "auth/no-auth-event") {
-          console.error("Redirect result error:", err.code);
-          setError("Ошибка входа через Google. Попробуйте ещё раз.");
-        }
-      });
-  }, []);
 
   const clearError = () => setError("");
 
@@ -89,17 +63,21 @@ export default function AuthModal({ onClose }) {
   }
 
   async function handleGoogle() {
+    if (isWebView()) {
+      // В WebView — открываем отдельную страницу которая сама обработает Google auth
+      // и после успеха перенаправит обратно на главную уже залогиненным
+      router.push("/auth/google");
+      onClose();
+      return;
+    }
+
+    // В браузере — обычный popup
     setLoading(true);
     setError("");
     try {
       googleProvider.setCustomParameters({ prompt: "select_account" });
-      if (isWebView()) {
-        await signInWithRedirect(auth, googleProvider);
-        // Страница уйдёт — дальнейший код не выполняется
-      } else {
-        const result = await signInWithPopup(auth, googleProvider);
-        if (result.user) onClose();
-      }
+      const result = await signInWithPopup(auth, googleProvider);
+      if (result.user) onClose();
     } catch (err) {
       if (
         err.code !== "auth/popup-closed-by-user" &&
@@ -110,23 +88,10 @@ export default function AuthModal({ onClose }) {
             ? "Этот домен не авторизован в Firebase."
             : "Ошибка входа через Google. Попробуйте ещё раз."
         );
-        console.error("Google auth error:", err.code, err.message);
       }
+    } finally {
       setLoading(false);
     }
-  }
-
-  // Пока идёт восстановление сессии после redirect — показываем лоадер
-  if (redirectPending) {
-    return (
-      <div className="modal-overlay">
-        <div className="modal" style={{ textAlign: "center", padding: "48px 32px" }}>
-          <div style={{ fontSize: 40, marginBottom: 16 }}>⏳</div>
-          <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Выполняется вход...</div>
-          <div style={{ color: "var(--muted)", fontSize: 13 }}>Пожалуйста, подождите</div>
-        </div>
-      </div>
-    );
   }
 
   return (
