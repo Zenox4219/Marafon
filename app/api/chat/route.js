@@ -19,8 +19,8 @@ export async function POST(request) {
 
     if (!res.ok) {
       const err = await res.text();
-      console.error("Groq error:", err);
-      return NextResponse.json({ error: "Groq API error" }, { status: 500 });
+     console.error("Groq error:", err);
+return NextResponse.json({ error: "Groq API error", details: err }, { status: 500 });
     }
 
     const data = await res.json();
