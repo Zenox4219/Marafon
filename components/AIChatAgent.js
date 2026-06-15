@@ -34,26 +34,21 @@ export default function AIChatAgent() {
     setLoading(true);
 
     try {
-      const apiMessages = newMessages.map((m) => ({ role: m.role, content: m.content }));
+      // Build messages for API (add system prompt at start)
+      const apiMessages = [
+        { role: "system", content: SYSTEM_PROMPT },
+        ...newMessages.map((m) => ({ role: m.role, content: m.content })),
+      ];
 
-      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      // Call our own Next.js API route — keeps GROQ_API_KEY secret on server
+      const res = await fetch("/api/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_GROQ_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "llama3-8b-8192",
-          max_tokens: 1000,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            ...apiMessages,
-          ],
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: apiMessages }),
       });
 
       const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content || "Извини, что-то пошло не так. Попробуй ещё раз.";
+      const reply = data.reply || "Извини, что-то пошло не так. Попробуй ещё раз.";
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Ошибка соединения. Попробуй позже." }]);
@@ -101,23 +96,21 @@ export default function AIChatAgent() {
 
       {/* Chat window */}
       {open && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 90,
-            right: 24,
-            zIndex: 1000,
-            width: "min(380px, calc(100vw - 32px))",
-            height: 480,
-            background: "var(--surface, #111)",
-            border: "1px solid var(--border, rgba(255,255,255,.1))",
-            borderRadius: 16,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            boxShadow: "0 8px 40px rgba(0,0,0,.6)",
-          }}
-        >
+        <div style={{
+          position: "fixed",
+          bottom: 90,
+          right: 24,
+          zIndex: 1000,
+          width: "min(380px, calc(100vw - 32px))",
+          height: 480,
+          background: "var(--surface, #111)",
+          border: "1px solid var(--border, rgba(255,255,255,.1))",
+          borderRadius: 16,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          boxShadow: "0 8px 40px rgba(0,0,0,.6)",
+        }}>
           {/* Header */}
           <div style={{
             padding: "14px 18px",
@@ -144,20 +137,12 @@ export default function AIChatAgent() {
             gap: 10,
           }}>
             {messages.map((m, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  justifyContent: m.role === "user" ? "flex-end" : "flex-start",
-                }}
-              >
+              <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
                 <div style={{
                   maxWidth: "82%",
                   padding: "10px 14px",
                   borderRadius: m.role === "user" ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
-                  background: m.role === "user"
-                    ? "var(--accent, #e8f400)"
-                    : "rgba(255,255,255,.07)",
+                  background: m.role === "user" ? "var(--accent, #e8f400)" : "rgba(255,255,255,.07)",
                   color: m.role === "user" ? "#000" : "var(--text, #fff)",
                   fontSize: 13,
                   lineHeight: 1.5,

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInWithRedirect,
+  signInWithPopup,
   updateProfile,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
@@ -53,11 +53,26 @@ export default function AuthModal({ onClose }) {
     setLoading(true);
     setError("");
     try {
-      // Use redirect instead of popup — works in all browsers without popup blockers
-      await signInWithRedirect(auth, googleProvider);
-      // Page will redirect to Google and come back — no need to call onClose()
+      // Configure provider to always show account picker
+      googleProvider.setCustomParameters({ prompt: "select_account" });
+      const result = await signInWithPopup(auth, googleProvider);
+      if (result.user) {
+        onClose();
+      }
     } catch (err) {
-      setError("Ошибка входа через Google.");
+      // Ignore if user just closed the popup
+      if (
+        err.code !== "auth/popup-closed-by-user" &&
+        err.code !== "auth/cancelled-popup-request"
+      ) {
+        setError(
+          err.code === "auth/unauthorized-domain"
+            ? "Этот домен не авторизован в Firebase. Добавьте его в настройках Authentication → Authorized domains."
+            : "Ошибка входа через Google. Попробуйте ещё раз."
+        );
+        console.error("Google auth error:", err.code, err.message);
+      }
+    } finally {
       setLoading(false);
     }
   }
@@ -125,7 +140,7 @@ export default function AuthModal({ onClose }) {
             <path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707 0-.59.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.548 0 9c0 1.452.348 2.825.957 4.039l3.007-2.332z" fill="#FBBC05"/>
             <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z" fill="#EA4335"/>
           </svg>
-          {loading ? "Перенаправление..." : "Войти через Google"}
+          {loading ? "Загрузка..." : "Войти через Google"}
         </button>
 
         <div className="modal-switch">
