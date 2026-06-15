@@ -21,8 +21,25 @@ export default function Navbar() {
             <>
               <Link href="/profile" className="nav-link">Профиль</Link>
               {isAdmin(user) && (
-                <Link href="/admin" className="nav-link" style={{ color: "var(--accent)", fontWeight: 600 }}>
-                  Админ
+                <Link
+                  href="/admin"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "6px 14px",
+                    background: "rgba(232,244,0,.12)",
+                    border: "1px solid rgba(232,244,0,.4)",
+                    borderRadius: 8,
+                    color: "var(--accent)",
+                    fontWeight: 700,
+                    fontSize: 13,
+                    fontFamily: "Inter, sans-serif",
+                    textDecoration: "none",
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  ⚙️ Админ
                 </Link>
               )}
               <button className="nav-link" onClick={logout}>Выйти</button>

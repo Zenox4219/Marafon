@@ -3,6 +3,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import Navbar from "@/components/Navbar";
 import CountdownTimer from "@/components/CountdownTimer";
 import SupportButton from "@/components/SupportButton";
+import AIChatAgent from "@/components/AIChatAgent";
 
 export const metadata = {
   title: "MarathonTrack — Беги. Расти. Побеждай.",
@@ -26,6 +27,7 @@ export default function RootLayout({ children }) {
           <main>{children}</main>
           <CountdownTimer />
           <SupportButton />
+          <AIChatAgent />
         </AuthProvider>
       </body>
     </html>

@@ -7,8 +7,13 @@ import {
   getMarathons, addMarathon, updateMarathon, deleteMarathon,
   getLeaderboard,
 } from "@/lib/firestore";
+import {
+  exportUsersCSV, exportUsersExcel,
+  exportMarathonsCSV, exportMarathonsExcel,
+  exportAllCSV, exportAllExcel,
+} from "@/lib/exportUtils";
 
-const TABS = ["📊 Статистика", "👥 Пользователи", "🏃 Марафоны"];
+const TABS = ["📊 Статистика", "👥 Пользователи", "🏃 Марафоны", "📥 Экспорт"];
 
 const emptyForm = { title: "", type: "marathon", city: "", date: "", distance: "", participants: 0, desc: "" };
 
@@ -205,6 +210,94 @@ export default function AdminPage() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              )}
+
+              {/* ── TAB 3: Export ── */}
+              {tab === 3 && (
+                <div>
+                  <div style={{ marginBottom: 32 }}>
+                    <div className="section-label" style={{ marginBottom: 8 }}>Экспорт всех данных</div>
+                    <p style={{ color: "var(--muted)", fontSize: 14, marginBottom: 20 }}>
+                      Выгрузите все данные из Firebase в удобный формат. Excel-файл содержит два листа: Пользователи и Марафоны.
+                    </p>
+                    <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                      <button
+                        onClick={() => exportAllExcel(users, marathons)}
+                        className="btn-primary"
+                        style={{ padding: "12px 24px", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}
+                      >
+                        📊 Скачать Excel (все данные)
+                      </button>
+                      <button
+                        onClick={() => exportAllCSV(users, marathons)}
+                        style={{
+                          padding: "12px 24px", fontSize: 14,
+                          background: "rgba(255,255,255,.06)", border: "1px solid var(--border)",
+                          borderRadius: "var(--radius)", color: "var(--text)", cursor: "pointer",
+                          fontFamily: "Inter, sans-serif", display: "flex", alignItems: "center", gap: 8,
+                        }}
+                      >
+                        📄 Скачать CSV (все данные)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px,1fr))", gap: 20 }}>
+                    {/* Users export */}
+                    <div className="card" style={{ cursor: "default" }}>
+                      <div style={{ fontSize: 32, marginBottom: 12 }}>👥</div>
+                      <h3 style={{ marginBottom: 6 }}>Пользователи</h3>
+                      <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 20 }}>
+                        {users.length} записей · UID, Имя, Email, Км, Марафонов
+                      </p>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          onClick={() => exportUsersExcel(users)}
+                          style={{
+                            flex: 1, padding: "9px", fontSize: 12, cursor: "pointer",
+                            background: "rgba(232,244,0,.1)", border: "1px solid rgba(232,244,0,.3)",
+                            color: "var(--accent)", borderRadius: "var(--radius)", fontFamily: "Inter, sans-serif",
+                          }}
+                        >📊 Excel</button>
+                        <button
+                          onClick={() => exportUsersCSV(users)}
+                          style={{
+                            flex: 1, padding: "9px", fontSize: 12, cursor: "pointer",
+                            background: "rgba(255,255,255,.05)", border: "1px solid var(--border)",
+                            color: "var(--muted)", borderRadius: "var(--radius)", fontFamily: "Inter, sans-serif",
+                          }}
+                        >📄 CSV</button>
+                      </div>
+                    </div>
+
+                    {/* Marathons export */}
+                    <div className="card" style={{ cursor: "default" }}>
+                      <div style={{ fontSize: 32, marginBottom: 12 }}>🏃</div>
+                      <h3 style={{ marginBottom: 6 }}>Марафоны</h3>
+                      <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 20 }}>
+                        {marathons.length} записей · Название, Город, Дата, Дистанция, Участники
+                      </p>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          onClick={() => exportMarathonsExcel(marathons)}
+                          style={{
+                            flex: 1, padding: "9px", fontSize: 12, cursor: "pointer",
+                            background: "rgba(232,244,0,.1)", border: "1px solid rgba(232,244,0,.3)",
+                            color: "var(--accent)", borderRadius: "var(--radius)", fontFamily: "Inter, sans-serif",
+                          }}
+                        >📊 Excel</button>
+                        <button
+                          onClick={() => exportMarathonsCSV(marathons)}
+                          style={{
+                            flex: 1, padding: "9px", fontSize: 12, cursor: "pointer",
+                            background: "rgba(255,255,255,.05)", border: "1px solid var(--border)",
+                            color: "var(--muted)", borderRadius: "var(--radius)", fontFamily: "Inter, sans-serif",
+                          }}
+                        >📄 CSV</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
