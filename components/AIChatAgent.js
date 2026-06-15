@@ -47,7 +47,14 @@ export default function AIChatAgent() {
         body: JSON.stringify({ messages: apiMessages }),
       });
 
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("API error:", res.status, text);
+        throw new Error("Server error");
+      }
+
       const data = await res.json();
+      console.log("API response:", data);
       const reply = data.reply || "Извини, что-то пошло не так. Попробуй ещё раз.";
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch {
