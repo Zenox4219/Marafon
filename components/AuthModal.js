@@ -7,15 +7,14 @@ import {
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
+  onAuthStateChanged,
   updateProfile,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 
-// Определяем: запущены ли мы внутри Android WebView
 function isWebView() {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent || "";
-  // Android WebView содержит "wv" или "WebView"
   return /wv|WebView/.test(ua) || (ua.includes("Android") && !ua.includes("Chrome/") && !ua.includes("Firefox/"));
 }
 
@@ -26,19 +25,34 @@ export default function AuthModal({ onClose }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // Показываем "Выполняется вход..." пока Firebase восстанавливает сессию после redirect
+  const [redirectPending, setRedirectPending] = useState(false);
   const router = useRouter();
 
-  // При загрузке страницы — проверяем результат redirect (если вернулись после Google auth)
   useEffect(() => {
+    // Проверяем есть ли pending redirect результат
+    setRedirectPending(true);
+
     getRedirectResult(auth)
       .then((result) => {
         if (result?.user) {
-          onClose();
+          // Успешный вход — ждём onAuthStateChanged чтобы убедиться что сессия установлена
+          const unsub = onAuthStateChanged(auth, (user) => {
+            if (user) {
+              unsub();
+              setRedirectPending(false);
+              onClose();
+            }
+          });
+        } else {
+          setRedirectPending(false);
         }
       })
       .catch((err) => {
+        setRedirectPending(false);
         if (err.code !== "auth/no-auth-event") {
           console.error("Redirect result error:", err.code);
+          setError("Ошибка входа через Google. Попробуйте ещё раз.");
         }
       });
   }, []);
@@ -79,17 +93,12 @@ export default function AuthModal({ onClose }) {
     setError("");
     try {
       googleProvider.setCustomParameters({ prompt: "select_account" });
-
       if (isWebView()) {
-        // В WebView используем redirect — popup не работает
         await signInWithRedirect(auth, googleProvider);
-        // Страница уйдёт на Google, результат поймаем через getRedirectResult в useEffect
+        // Страница уйдёт — дальнейший код не выполняется
       } else {
-        // В браузере — обычный popup
         const result = await signInWithPopup(auth, googleProvider);
-        if (result.user) {
-          onClose();
-        }
+        if (result.user) onClose();
       }
     } catch (err) {
       if (
@@ -98,14 +107,26 @@ export default function AuthModal({ onClose }) {
       ) {
         setError(
           err.code === "auth/unauthorized-domain"
-            ? "Этот домен не авторизован в Firebase. Добавьте его в настройках Authentication → Authorized domains."
+            ? "Этот домен не авторизован в Firebase."
             : "Ошибка входа через Google. Попробуйте ещё раз."
         );
         console.error("Google auth error:", err.code, err.message);
       }
-    } finally {
       setLoading(false);
     }
+  }
+
+  // Пока идёт восстановление сессии после redirect — показываем лоадер
+  if (redirectPending) {
+    return (
+      <div className="modal-overlay">
+        <div className="modal" style={{ textAlign: "center", padding: "48px 32px" }}>
+          <div style={{ fontSize: 40, marginBottom: 16 }}>⏳</div>
+          <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Выполняется вход...</div>
+          <div style={{ color: "var(--muted)", fontSize: 13 }}>Пожалуйста, подождите</div>
+        </div>
+      </div>
+    );
   }
 
   return (
