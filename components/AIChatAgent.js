@@ -36,19 +36,24 @@ export default function AIChatAgent() {
     try {
       const apiMessages = newMessages.map((m) => ({ role: m.role, content: m.content }));
 
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_GROQ_API_KEY}`,
+        },
         body: JSON.stringify({
-          model: "claude-sonnet-4-6",
+          model: "llama3-8b-8192",
           max_tokens: 1000,
-          system: SYSTEM_PROMPT,
-          messages: apiMessages,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            ...apiMessages,
+          ],
         }),
       });
 
       const data = await res.json();
-      const reply = data.content?.[0]?.text || "Извини, что-то пошло не так. Попробуй ещё раз.";
+      const reply = data.choices?.[0]?.message?.content || "Извини, что-то пошло не так. Попробуй ещё раз.";
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Ошибка соединения. Попробуй позже." }]);
